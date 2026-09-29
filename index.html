@@ -4,36 +4,746 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ADA CODE — O Caminho das Instruções</title>
-    <meta name="description" content="Jogo educativo para organizar instruções e levar uma máquina até uma estrela." />
-    <link rel="stylesheet" href="styles.css" />
+    <style>
+      :root {
+        --purple-dark: #2d1b4e;
+        --purple-mid: #5b3d86;
+        --purple-soft: #7e5bb6;
+        --gold: #d7ad46;
+        --gold-soft: #e9d07e;
+        --beige: #f5ecdf;
+        --beige-deep: #d6c29e;
+        --text: #2c1c47;
+        --white: #fff;
+        --success: #2b7a4e;
+        --error: #b34444;
+        --shadow: rgba(20, 10, 33, 0.25);
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, var(--purple-dark), #150d23);
+        color: var(--text);
+      }
+
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+      }
+
+      button {
+        font: inherit;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      }
+
+      button:active { transform: translateY(1px) scale(0.99); }
+
+      .screen {
+        display: none;
+        width: min(100%, 620px);
+        background: var(--beige);
+        border-radius: 26px;
+        border: 4px solid var(--gold);
+        box-shadow: 0 18px 36px var(--shadow);
+        padding: 26px 18px;
+      }
+
+      .screen.active { display: block; }
+
+      .intro-screen {
+        text-align: center;
+      }
+
+      .title-wrap {
+        margin-bottom: 18px;
+      }
+
+      .title-wrap h1 {
+        margin: 0;
+        font-size: clamp(2.5rem, 7vw, 4rem);
+        letter-spacing: 0.08em;
+        color: var(--purple-dark);
+        text-shadow: 2px 2px 0 var(--gold-soft);
+      }
+
+      .subtitle {
+        margin: 8px 0 0;
+        font-size: clamp(1.05rem, 3.3vw, 1.45rem);
+        color: var(--purple-mid);
+        font-weight: 700;
+        letter-spacing: 0.05em;
+      }
+
+      .divider {
+        height: 3px;
+        background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        border-radius: 999px;
+        margin: 18px auto 16px;
+        width: min(80%, 250px);
+      }
+
+      .intro-text {
+        margin: 0 auto 22px;
+        max-width: 420px;
+        font-size: 1.05rem;
+        line-height: 1.7;
+      }
+
+      .badges {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 28px;
+      }
+
+      .badge {
+        background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+        color: var(--purple-dark);
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-weight: 800;
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        box-shadow: 0 6px 18px rgba(215, 173, 70, 0.24);
+      }
+
+      .btn-primary {
+        display: block;
+        width: fit-content;
+        margin: 0 auto;
+        padding: 16px 42px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, var(--purple-mid), var(--purple-dark));
+        color: var(--white);
+        font-weight: 800;
+        font-size: 1.05rem;
+        box-shadow: 0 12px 24px rgba(45, 27, 78, 0.25);
+      }
+
+      .game-screen {
+        display: none;
+        gap: 18px;
+      }
+
+      .screen-header {
+        text-align: center;
+      }
+
+      .screen-header h2 {
+        margin: 0;
+        font-size: clamp(1.8rem, 5vw, 2.4rem);
+        color: var(--purple-dark);
+      }
+
+      .mission-box {
+        background: rgba(126, 91, 182, 0.08);
+        border: 2px solid rgba(126, 91, 182, 0.12);
+        border-radius: 14px;
+        padding: 12px 14px;
+        font-size: 0.96rem;
+        line-height: 1.5;
+      }
+
+      .board-wrap {
+        background: rgba(215, 173, 70, 0.12);
+        border: 2px solid rgba(215, 173, 70, 0.2);
+        border-radius: 18px;
+        padding: 12px;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+        aspect-ratio: 1;
+        padding: 8px;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #f8f0e4, #ebdcc0);
+        border: 3px solid rgba(45, 27, 78, 0.18);
+      }
+
+      .cell {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.35);
+        border: 2px solid rgba(45, 27, 78, 0.12);
+        font-size: clamp(1.2rem, 4vw, 2rem);
+        overflow: hidden;
+      }
+
+      .cell.goal {
+        background: rgba(215, 173, 70, 0.24);
+        border-color: rgba(215, 173, 70, 0.7);
+      }
+
+      .cell.obstacle {
+        background: linear-gradient(135deg, #44315f, #1a102b);
+        border-color: rgba(45,27,78,0.7);
+      }
+
+      .robot {
+        width: 68%;
+        height: 68%;
+        display: block;
+        background: linear-gradient(135deg, var(--purple-mid), var(--purple-dark));
+        border-radius: 12px;
+        box-shadow: inset 0 2px 0 rgba(255,255,255,0.18), 0 8px 14px rgba(45,27,78,0.16);
+        position: relative;
+        transform-origin: center;
+      }
+
+      .robot::before {
+        content: "";
+        position: absolute;
+        inset: 24% 24% 22%;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.18);
+      }
+
+      .robot::after {
+        content: "";
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-left: 7px solid transparent;
+        border-right: 7px solid transparent;
+        border-bottom: 13px solid rgba(255,255,255,0.82);
+        left: 50%;
+        top: 8%;
+        transform: translateX(-50%);
+      }
+
+      .robot.up { transform: rotate(0deg); }
+      .robot.right { transform: rotate(90deg); }
+      .robot.down { transform: rotate(180deg); }
+      .robot.left { transform: rotate(-90deg); }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .cmd-btn {
+        min-height: 52px;
+        border-radius: 14px;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+        color: var(--purple-dark);
+        box-shadow: 0 8px 20px rgba(215, 173, 70, 0.18);
+      }
+
+      .cmd-btn:disabled,
+      .action-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .sequence-box {
+        background: rgba(107, 77, 168, 0.08);
+        border: 2px solid rgba(107, 77, 168, 0.12);
+        border-radius: 14px;
+        padding: 12px;
+      }
+
+      .sequence-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .sequence-header h3 {
+        margin: 0;
+        color: var(--purple-dark);
+        font-size: 1.05rem;
+      }
+
+      .counter {
+        background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 0.82rem;
+        font-weight: 800;
+      }
+
+      .command-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 38px;
+      }
+
+      .command-chip {
+        display: inline-block;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(126, 91, 182, 0.18), rgba(215, 173, 70, 0.2));
+        border: 1px solid rgba(126, 91, 182, 0.2);
+        color: var(--text);
+        font-weight: 700;
+        font-size: 0.82rem;
+      }
+
+      .empty-state {
+        margin: 0;
+        color: rgba(44, 28, 71, 0.7);
+        font-style: italic;
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 10px;
+      }
+
+      .action-btn {
+        min-height: 52px;
+        border-radius: 14px;
+        font-weight: 800;
+      }
+
+      .execute-btn {
+        background: linear-gradient(135deg, var(--success), #285d42);
+        color: var(--white);
+        box-shadow: 0 10px 22px rgba(43, 122, 78, 0.2);
+      }
+
+      .clear-btn {
+        background: linear-gradient(135deg, var(--beige-deep), #c4af86);
+        color: var(--purple-dark);
+      }
+
+      .status-box {
+        background: rgba(215, 173, 70, 0.12);
+        border: 2px solid rgba(215, 173, 70, 0.2);
+        border-radius: 12px;
+        padding: 12px 14px;
+        text-align: center;
+        min-height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1.5;
+        font-weight: 600;
+      }
+
+      .status-box.success {
+        background: rgba(43, 122, 78, 0.12);
+        border-color: rgba(43, 122, 78, 0.35);
+        color: var(--success);
+      }
+
+      .status-box.error {
+        background: rgba(179, 68, 68, 0.08);
+        border-color: rgba(179, 68, 68, 0.3);
+        color: var(--error);
+      }
+
+      .victory-screen {
+        text-align: center;
+      }
+
+      .victory-screen h2 {
+        margin: 8px 0 14px;
+        font-size: clamp(2rem, 6vw, 2.8rem);
+        color: var(--success);
+      }
+
+      .star-big {
+        font-size: 4rem;
+        margin-bottom: 0;
+      }
+
+      .victory-box {
+        background: rgba(43, 122, 78, 0.08);
+        border-left: 4px solid var(--success);
+        border-radius: 12px;
+        padding: 14px 16px;
+        line-height: 1.7;
+        margin-bottom: 18px;
+      }
+
+      .ada-note {
+        background: rgba(126, 91, 182, 0.08);
+        border-left: 4px solid var(--purple-mid);
+        border-radius: 12px;
+        padding: 14px 16px;
+        line-height: 1.7;
+        font-style: italic;
+        margin-bottom: 18px;
+      }
+
+      .restart-btn {
+        display: block;
+        width: fit-content;
+        margin: 0 auto;
+        background: linear-gradient(135deg, var(--purple-mid), var(--purple-dark));
+        color: var(--white);
+        border-radius: 14px;
+        padding: 16px 40px;
+        font-weight: 800;
+        box-shadow: 0 12px 24px rgba(45, 27, 78, 0.2);
+      }
+
+      @media (max-width: 480px) {
+        .screen { padding: 20px 14px; border-radius: 18px; }
+        .actions { grid-template-columns: 1fr; }
+        .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+    </style>
   </head>
   <body>
-    <div class="page-shell">
-      <div class="ornament ornament-top"></div>
-      <div class="ornament ornament-bottom"></div>
-      <main class="game-card" aria-label="Jogo ADA CODE">
-        <header class="topbar">
-          <div><p class="eyebrow">MISSÃO CURTA</p><h1>ADA CODE</h1></div>
-          <div class="badge">5×5</div>
-        </header>
-        <section class="mission-box"><p class="mission-label">Objetivo</p><p>Organize as instruções para levar a máquina até a estrela em até 7 comandos.</p></section>
-        <section class="board-panel"><div id="board" class="board" aria-label="Tabuleiro do jogo"></div></section>
-        <section class="controls-panel">
-          <div class="action-grid">
-            <button class="command-btn" data-action="avancar" type="button">Avançar</button>
-            <button class="command-btn" data-action="direita" type="button">Direita</button>
-            <button class="command-btn" data-action="esquerda" type="button">Esquerda</button>
-            <button class="command-btn" data-action="voltar" type="button">Voltar</button>
-          </div>
-          <div class="sequence-box">
-            <div class="sequence-header"><h2>Sequência</h2><span id="counter">0/7</span></div>
-            <div id="commandList" class="command-list" aria-live="polite"><p class="empty-state">Sua máquina aguarda as instruções.</p></div>
-          </div>
-          <div class="footer-actions"><button id="executeBtn" class="primary-btn" type="button">Executar</button><button id="clearBtn" class="secondary-btn" type="button">Limpar</button></div>
-        </section>
-        <section class="status-panel" aria-live="polite"><p id="statusText" class="status-text">Selecione os comandos e veja a máquina seguir o caminho.</p></section>
-      </main>
+    <div id="introScreen" class="screen intro-screen active">
+      <div class="title-wrap">
+        <h1>ADA CODE</h1>
+        <div class="subtitle">O Caminho das Instruções</div>
+        <div class="divider"></div>
+      </div>
+
+      <p class="intro-text">Sua missão é organizar os comandos para levar a máquina até a estrela!</p>
+
+      <div class="badges">
+        <span class="badge">5 × 5</span>
+        <span class="badge">7 comandos</span>
+        <span class="badge">1 a 3 min</span>
+      </div>
+
+      <button class="btn-primary" id="startBtn">Começar</button>
     </div>
-    <script src="script.js"></script>
+
+    <div id="gameScreen" class="screen game-screen">
+      <div class="screen-header">
+        <h2>ADA CODE</h2>
+      </div>
+
+      <div class="mission-box">
+        Sua missão é levar a máquina até a estrela! Organize os comandos e aperte Executar.
+      </div>
+
+      <div class="board-wrap">
+        <div class="board" id="board" aria-label="Tabuleiro do jogo"></div>
+      </div>
+
+      <div class="controls">
+        <button class="cmd-btn" data-command="forward" type="button">↑ Avançar</button>
+        <button class="cmd-btn" data-command="right" type="button">↻ Direita</button>
+        <button class="cmd-btn" data-command="left" type="button">↺ Esquerda</button>
+        <button class="cmd-btn" data-command="back" type="button">↓ Voltar</button>
+      </div>
+
+      <div class="sequence-box">
+        <div class="sequence-header">
+          <h3>Sequência</h3>
+          <span class="counter" id="counter">0/7</span>
+        </div>
+        <div class="command-list" id="commandList">
+          <p class="empty-state">Nenhum comando adicionado.</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="action-btn execute-btn" id="executeBtn" type="button">▶ Executar</button>
+        <button class="action-btn clear-btn" id="clearBtn" type="button">🔄 Limpar</button>
+      </div>
+
+      <div id="statusBox" class="status-box">
+        Organize os comandos e aperte Executar.
+      </div>
+    </div>
+
+    <div id="victoryScreen" class="screen victory-screen">
+      <div class="star-big">⭐</div>
+      <h2>Parabéns!</h2>
+      <div class="victory-box">
+        Você conseguiu! Uma sequência organizada de instruções pode orientar uma máquina a realizar uma tarefa.
+      </div>
+      <div class="ada-note">
+        Este desafio foi inspirado nas ideias de Ada Lovelace, matemática que escreveu um algoritmo destinado à Máquina Analítica no século XIX.
+      </div>
+      <button class="restart-btn" id="restartBtn" type="button">Jogar Novamente</button>
+    </div>
+
+    <script>
+      const boardEl = document.getElementById('board');
+      const commandListEl = document.getElementById('commandList');
+      const counterEl = document.getElementById('counter');
+      const statusBox = document.getElementById('statusBox');
+      const executeBtn = document.getElementById('executeBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const introScreen = document.getElementById('introScreen');
+      const gameScreen = document.getElementById('gameScreen');
+      const victoryScreen = document.getElementById('victoryScreen');
+      const startBtn = document.getElementById('startBtn');
+      const restartBtn = document.getElementById('restartBtn');
+
+      const BOARD_SIZE = 5;
+      const MAX_COMMANDS = 7;
+
+      const OBSTACLES = [
+        { x: 0, y: 0 },
+        { x: 3, y: 0 },
+        { x: 1, y: 1 },
+        { x: 3, y: 1 },
+        { x: 4, y: 2 },
+        { x: 1, y: 3 },
+        { x: 3, y: 3 }
+      ];
+
+      const GOAL = { x: 2, y: 1 };
+      const START = { x: 0, y: 4 };
+
+      const DIRS = [
+        { x: 0, y: -1, name: 'up' },
+        { x: 1, y: 0, name: 'right' },
+        { x: 0, y: 1, name: 'down' },
+        { x: -1, y: 0, name: 'left' }
+      ];
+
+      let state = {
+        commands: [],
+        robot: { x: START.x, y: START.y, direction: 0 },
+        executing: false,
+        solved: false
+      };
+
+      const commandLabels = {
+        forward: 'Avançar',
+        right: 'Direita',
+        left: 'Esquerda',
+        back: 'Voltar'
+      };
+
+      function showScreen(screen) {
+        introScreen.classList.remove('active');
+        gameScreen.classList.remove('active');
+        victoryScreen.classList.remove('active');
+        screen.classList.add('active');
+      }
+
+      function setStatus(message, type = '') {
+        statusBox.textContent = message;
+        statusBox.classList.remove('success', 'error');
+        if (type) statusBox.classList.add(type);
+      }
+
+      function resetState() {
+        state = {
+          commands: [],
+          robot: { x: START.x, y: START.y, direction: 0 },
+          executing: false,
+          solved: false
+        };
+        renderBoard();
+        renderCommands();
+      }
+
+      function isObstacle(x, y) {
+        return OBSTACLES.some((cell) => cell.x === x && cell.y === y);
+      }
+
+      function isInsideBoard(x, y) {
+        return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+      }
+
+      function renderBoard() {
+        boardEl.innerHTML = '';
+
+        for (let y = 0; y < BOARD_SIZE; y += 1) {
+          for (let x = 0; x < BOARD_SIZE; x += 1) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+
+            if (x === GOAL.x && y === GOAL.y) {
+              cell.classList.add('goal');
+              cell.textContent = '⭐';
+            }
+
+            if (isObstacle(x, y)) {
+              cell.classList.add('obstacle');
+              cell.textContent = '■';
+            }
+
+            if (state.robot.x === x && state.robot.y === y) {
+              const robot = document.createElement('div');
+              robot.className = `robot ${DIRS[state.robot.direction].name}`;
+              cell.innerHTML = '';
+              cell.appendChild(robot);
+            }
+
+            boardEl.appendChild(cell);
+          }
+        }
+      }
+
+      function renderCommands() {
+        counterEl.textContent = `${state.commands.length}/${MAX_COMMANDS}`;
+
+        if (state.commands.length === 0) {
+          commandListEl.innerHTML = '<p class="empty-state">Nenhum comando adicionado.</p>';
+          return;
+        }
+
+        commandListEl.innerHTML = state.commands
+          .map((cmd) => `<span class="command-chip">${commandLabels[cmd]}</span>`)
+          .join('');
+      }
+
+      function addCommand(command) {
+        if (state.executing || state.solved) return;
+        if (state.commands.length >= MAX_COMMANDS) {
+          setStatus('Você atingiu o limite de 7 comandos. Execute ou limpe para tentar outra rota.', 'error');
+          return;
+        }
+
+        state.commands.push(command);
+        renderCommands();
+        setStatus('Comando adicionado. Continue organizando sua sequência.');
+      }
+
+      function clearSequence() {
+        if (state.executing) return;
+        state.commands = [];
+        state.robot = { x: START.x, y: START.y, direction: 0 };
+        state.solved = false;
+        renderBoard();
+        renderCommands();
+        setStatus('Sequência apagada. Crie uma nova rota.');
+      }
+
+      function tryMoveInDirection(directionIndex) {
+        const dir = DIRS[directionIndex];
+        const nx = state.robot.x + dir.x;
+        const ny = state.robot.y + dir.y;
+
+        if (!isInsideBoard(nx, ny)) {
+          return { crashed: true };
+        }
+
+        if (isObstacle(nx, ny)) {
+          return { crashed: true };
+        }
+
+        state.robot.x = nx;
+        state.robot.y = ny;
+        return { crashed: false };
+      }
+
+      function executeCommand(command) {
+        if (command === 'forward') {
+          return tryMoveInDirection(state.robot.direction);
+        }
+
+        if (command === 'right') {
+          state.robot.direction = (state.robot.direction + 1) % 4;
+          return { crashed: false };
+        }
+
+        if (command === 'left') {
+          state.robot.direction = (state.robot.direction + 3) % 4;
+          return { crashed: false };
+        }
+
+        if (command === 'back') {
+          const backDir = (state.robot.direction + 2) % 4;
+          return tryMoveInDirection(backDir);
+        }
+
+        return { crashed: false };
+      }
+
+      function checkVictory() {
+        return state.robot.x === GOAL.x && state.robot.y === GOAL.y;
+      }
+
+      async function executeProgram() {
+        if (state.executing || state.commands.length === 0) {
+          if (state.commands.length === 0) setStatus('Escolha pelo menos um comando antes de executar.', 'error');
+          return;
+        }
+
+        state.executing = true;
+        executeBtn.disabled = true;
+        clearBtn.disabled = true;
+        document.querySelectorAll('.cmd-btn').forEach((btn) => (btn.disabled = true));
+
+        state.robot = { x: START.x, y: START.y, direction: 0 };
+        renderBoard();
+        setStatus('Executando instruções...');
+
+        for (const command of state.commands) {
+          if (!state.executing) break;
+
+          const result = executeCommand(command);
+          renderBoard();
+
+          if (result.crashed) {
+            state.executing = false;
+            executeBtn.disabled = false;
+            clearBtn.disabled = false;
+            document.querySelectorAll('.cmd-btn').forEach((btn) => (btn.disabled = false));
+            setStatus('Ops! A máquina encontrou um obstáculo. Ajuste os comandos e tente novamente.', 'error');
+            return;
+          }
+
+          if (checkVictory()) {
+            state.executing = false;
+            state.solved = true;
+            executeBtn.disabled = false;
+            clearBtn.disabled = false;
+            document.querySelectorAll('.cmd-btn').forEach((btn) => (btn.disabled = false));
+            setStatus('Parabéns! Você conseguiu!', 'success');
+            setTimeout(() => {
+              showScreen(victoryScreen);
+            }, 350);
+            return;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 350));
+        }
+
+        state.executing = false;
+        executeBtn.disabled = false;
+        clearBtn.disabled = false;
+        document.querySelectorAll('.cmd-btn').forEach((btn) => (btn.disabled = false));
+
+        if (!checkVictory()) {
+          setStatus('Ainda não chegou à estrela! Você pode modificar sua sequência e tentar outra vez.', 'error');
+        }
+      }
+
+      document.querySelectorAll('.cmd-btn').forEach((btn) => {
+        btn.addEventListener('click', () => addCommand(btn.dataset.command));
+      });
+
+      executeBtn.addEventListener('click', executeProgram);
+      clearBtn.addEventListener('click', clearSequence);
+      startBtn.addEventListener('click', () => {
+        resetState();
+        showScreen(gameScreen);
+      });
+      restartBtn.addEventListener('click', () => {
+        resetState();
+        showScreen(introScreen);
+      });
+
+      resetState();
+      renderBoard();
+      setStatus('Organize os comandos e aperte Executar.');
+    </script>
   </body>
 </html>
