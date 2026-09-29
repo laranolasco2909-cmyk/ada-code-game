@@ -6,7 +6,7 @@ const executeBtn = document.getElementById('executeBtn');
 const clearBtn = document.getElementById('clearBtn');
 
 const BOARD_SIZE = 5;
-const MAX_COMMANDS = 7;
+const MAX_COMMANDS = 15;
 
 const START = { x: 0, y: 4, dir: 0 };
 const GOAL = { x: 2, y: 1 };
@@ -112,7 +112,7 @@ function renderCommands() {
 function addCommand(command) {
   if (state.executing) return;
   if (state.commands.length >= MAX_COMMANDS) {
-    setStatus('A sequência já chegou ao limite de 7 comandos. Execute ou limpe para tentar outra rota.', 'error');
+    setStatus(`A sequência já chegou ao limite de ${MAX_COMMANDS} comandos. Execute ou limpe para tentar outra rota.`, 'error');
     return;
   }
 
