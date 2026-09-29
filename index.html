@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ADA CODE — O Caminho das Instruções</title>
+    <meta name="description" content="Jogo educativo para organizar instruções e levar uma máquina até uma estrela." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="ornament ornament-top"></div>
+      <div class="ornament ornament-bottom"></div>
+      <main class="game-card" aria-label="Jogo ADA CODE">
+        <header class="topbar">
+          <div><p class="eyebrow">MISSÃO CURTA</p><h1>ADA CODE</h1></div>
+          <div class="badge">5×5</div>
+        </header>
+        <section class="mission-box"><p class="mission-label">Objetivo</p><p>Organize as instruções para levar a máquina até a estrela em até 7 comandos.</p></section>
+        <section class="board-panel"><div id="board" class="board" aria-label="Tabuleiro do jogo"></div></section>
+        <section class="controls-panel">
+          <div class="action-grid">
+            <button class="command-btn" data-action="avancar" type="button">Avançar</button>
+            <button class="command-btn" data-action="direita" type="button">Direita</button>
+            <button class="command-btn" data-action="esquerda" type="button">Esquerda</button>
+            <button class="command-btn" data-action="voltar" type="button">Voltar</button>
+          </div>
+          <div class="sequence-box">
+            <div class="sequence-header"><h2>Sequência</h2><span id="counter">0/7</span></div>
+            <div id="commandList" class="command-list" aria-live="polite"><p class="empty-state">Sua máquina aguarda as instruções.</p></div>
+          </div>
+          <div class="footer-actions"><button id="executeBtn" class="primary-btn" type="button">Executar</button><button id="clearBtn" class="secondary-btn" type="button">Limpar</button></div>
+        </section>
+        <section class="status-panel" aria-live="polite"><p id="statusText" class="status-text">Selecione os comandos e veja a máquina seguir o caminho.</p></section>
+      </main>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
