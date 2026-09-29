@@ -1,1 +1,229 @@
-const boardEl=document.getElementById("board"),commandListEl=document.getElementById("commandList"),statusTextEl=document.getElementById("statusText"),counterEl=document.getElementById("counter"),executeBtn=document.getElementById("executeBtn"),clearBtn=document.getElementById("clearBtn");const BOARD_SIZE=5,MAX_COMMANDS=7;const state={commands:[],player:{x:0,y:0,dir:0},target:{x:4,y:4},obstacles:[{x:1,y:1},{x:2,y:1},{x:3,y:3},{x:1,y:3},{x:3,y:2}],isExecuting:false,isFinished:false,initialPlayer:{x:0,y:0,dir:0}};const ACTION_LABELS={avancar:"Avançar",direita:"Direita",esquerda:"Esquerda",voltar:"Voltar"},DIRECTION_VECTORS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}],ROTATION_MAP={0:0,1:90,2:180,3:-90};function resetPlayer(){state.player={...state.initialPlayer};renderBoard()}function setStatus(message,type="normal"){statusTextEl.textContent=message;statusTextEl.classList.remove("win","error");if(type!=="normal")statusTextEl.classList.add(type)}function renderCommands(){counterEl.textContent=`${state.commands.length}/${MAX_COMMANDS}`;commandListEl.innerHTML=state.commands.length?state.commands.map(action=>`<span class="command-chip">${ACTION_LABELS[action]}</span>`).join(""):'<p class="empty-state">Sua máquina aguarda as instruções.</p>'}function isObstacle(x,y){return state.obstacles.some(cell=>cell.x===x&&cell.y===y)}function isInsideBoard(x,y){return x>=0&&x<BOARD_SIZE&&y>=0&&y<BOARD_SIZE}function renderBoard(){boardEl.innerHTML="";for(let row=0;row<BOARD_SIZE;row+=1)for(let col=0;col<BOARD_SIZE;col+=1){const cell=document.createElement("div");cell.className="cell";if(col===state.target.x&&row===state.target.y)cell.classList.add("goal");if(isObstacle(col,row))cell.classList.add("obstacle");if(col===state.player.x&&row===state.player.y){const robotEl=document.createElement("div");robotEl.className="robot";robotEl.style.setProperty("--rotation",`${ROTATION_MAP[state.player.dir]}deg`);cell.appendChild(robotEl)}boardEl.appendChild(cell)}}function addCommand(action){if(state.isExecuting||state.isFinished)return;if(state.commands.length>=MAX_COMMANDS){setStatus("A sequência já chegou ao limite de 7 comandos. Execute ou limpe para tentar outra rota.","error");return}state.commands.push(action);renderCommands();setStatus("Comando adicionado. Continue montando a rota da máquina.")}function clearSequence(){state.commands=[];state.isFinished=false;state.isExecuting=false;renderCommands();resetPlayer();setStatus("A sequência foi apagada. Crie uma nova rota para a máquina.");executeBtn.disabled=false}function getNextPosition(directionIndex){const vector=DIRECTION_VECTORS[directionIndex];return{x:state.player.x+vector.x,y:state.player.y+vector.y}}function tryMoveForward(){const next=getNextPosition(state.player.dir);if(!isInsideBoard(next.x,next.y)||isObstacle(next.x,next.y))return false;state.player.x=next.x;state.player.y=next.y;renderBoard();if(state.player.x===state.target.x&&state.player.y===state.target.y)return"win";return true}function executeAction(action){if(action==="avancar")return tryMoveForward();if(action==="direita"){state.player.dir=(state.player.dir+1)%4;renderBoard();return true}if(action==="esquerda"){state.player.dir=(state.player.dir+3)%4;renderBoard();return true}if(action==="voltar"){state.player.dir=(state.player.dir+2)%4;return tryMoveForward()}return true}function finishExecutionWithMessage(message,type){state.isExecuting=false;state.isFinished=true;executeBtn.disabled=false;setStatus(message,type)}function executeProgram(){if(state.isExecuting||!state.commands.length){if(!state.commands.length)setStatus("Escolha pelo menos um comando antes de executar a máquina.","error");return}state.isExecuting=true;state.isFinished=false;executeBtn.disabled=true;resetPlayer();let stepIndex=0;function runNextStep(){if(!state.isExecuting)return;if(stepIndex>=state.commands.length){finishExecutionWithMessage("A máquina terminou a sequência, mas não chegou à estrela. Tente outra rota.","error");return}const action=state.commands[stepIndex++],result=executeAction(action);if(result===false){finishExecutionWithMessage("Obstáculo encontrado! A máquina parou antes do destino. Faça uma nova tentativa.","error");return}if(result==="win"){finishExecutionWithMessage("Vitória! A máquina alcançou a estrela. Ada Lovelace imaginou que máquinas poderiam seguir instruções em sequência para resolver problemas — e isso é a base da programação.","win");return}window.setTimeout(runNextStep,420)}setStatus("Executando instruções... Observe o percurso da máquina.");runNextStep()}document.querySelectorAll(".command-btn").forEach(button=>button.addEventListener("click",()=>addCommand(button.dataset.action)));executeBtn.addEventListener("click",executeProgram);clearBtn.addEventListener("click",clearSequence);renderBoard();renderCommands();
+const boardEl = document.getElementById('board');
+const commandListEl = document.getElementById('commandList');
+const statusTextEl = document.getElementById('statusText');
+const counterEl = document.getElementById('counter');
+const executeBtn = document.getElementById('executeBtn');
+const clearBtn = document.getElementById('clearBtn');
+
+const BOARD_SIZE = 5;
+const MAX_COMMANDS = 7;
+
+const START = { x: 0, y: 4, dir: 0 };
+const GOAL = { x: 2, y: 1 };
+
+// Tabuleiro exato solicitado no enunciado:
+// Linha 1: ■ · · ■ ·
+// Linha 2: · ■ ⭐ ■ ·
+// Linha 3: · · · · ■
+// Linha 4: · ■ · ■ ·
+// Linha 5: 🤖 · · · ·
+const OBSTACLES = [
+  { x: 0, y: 0 },
+  { x: 3, y: 0 },
+  { x: 1, y: 1 },
+  { x: 3, y: 1 },
+  { x: 4, y: 2 },
+  { x: 1, y: 3 },
+  { x: 3, y: 3 }
+];
+
+const DIRS = [
+  { x: 0, y: -1, name: 'up' },
+  { x: 1, y: 0, name: 'right' },
+  { x: 0, y: 1, name: 'down' },
+  { x: -1, y: 0, name: 'left' }
+];
+
+const state = {
+  commands: [],
+  robot: { x: START.x, y: START.y, dir: START.dir },
+  executing: false
+};
+
+const commandLabels = {
+  avancar: 'Avançar',
+  direita: 'Direita',
+  esquerda: 'Esquerda',
+  voltar: 'Voltar'
+};
+
+function setStatus(message, type = '') {
+  statusTextEl.textContent = message;
+  statusTextEl.classList.remove('success', 'error');
+  if (type) statusTextEl.classList.add(type);
+}
+
+function resetRobot() {
+  state.robot = { x: START.x, y: START.y, dir: START.dir };
+  renderBoard();
+}
+
+function isObstacle(x, y) {
+  return OBSTACLES.some((cell) => cell.x === x && cell.y === y);
+}
+
+function isInsideBoard(x, y) {
+  return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+}
+
+function renderBoard() {
+  boardEl.innerHTML = '';
+
+  for (let y = 0; y < BOARD_SIZE; y += 1) {
+    for (let x = 0; x < BOARD_SIZE; x += 1) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+
+      if (x === GOAL.x && y === GOAL.y) {
+        cell.classList.add('goal');
+        cell.textContent = '★';
+      }
+
+      if (isObstacle(x, y)) {
+        cell.classList.add('obstacle');
+        cell.textContent = '■';
+      }
+
+      if (state.robot.x === x && state.robot.y === y) {
+        const robot = document.createElement('div');
+        robot.className = 'robot';
+        robot.style.transform = `rotate(${state.robot.dir * 90}deg)`;
+        cell.appendChild(robot);
+      }
+
+      boardEl.appendChild(cell);
+    }
+  }
+}
+
+function renderCommands() {
+  counterEl.textContent = `${state.commands.length}/${MAX_COMMANDS}`;
+
+  if (state.commands.length === 0) {
+    commandListEl.innerHTML = '<p class="empty-state">Sua máquina aguarda as instruções.</p>';
+    return;
+  }
+
+  commandListEl.innerHTML = state.commands
+    .map((cmd) => `<span class="command-chip">${commandLabels[cmd]}</span>`)
+    .join('');
+}
+
+function addCommand(command) {
+  if (state.executing) return;
+  if (state.commands.length >= MAX_COMMANDS) {
+    setStatus('A sequência já chegou ao limite de 7 comandos. Execute ou limpe para tentar outra rota.', 'error');
+    return;
+  }
+
+  state.commands.push(command);
+  renderCommands();
+  setStatus('Comando adicionado. Continue montando a rota da máquina.');
+}
+
+function clearSequence() {
+  if (state.executing) return;
+  state.commands = [];
+  resetRobot();
+  renderCommands();
+  setStatus('A sequência foi apagada. Crie uma nova rota para a máquina.');
+}
+
+function tryMove(directionIndex) {
+  const dir = DIRS[directionIndex];
+  const nextX = state.robot.x + dir.x;
+  const nextY = state.robot.y + dir.y;
+
+  if (!isInsideBoard(nextX, nextY) || isObstacle(nextX, nextY)) {
+    return false;
+  }
+
+  state.robot.x = nextX;
+  state.robot.y = nextY;
+  renderBoard();
+  return true;
+}
+
+function executeAction(action) {
+  if (action === 'avancar') {
+    return tryMove(state.robot.dir);
+  }
+
+  if (action === 'direita') {
+    state.robot.dir = (state.robot.dir + 1) % 4;
+    renderBoard();
+    return true;
+  }
+
+  if (action === 'esquerda') {
+    state.robot.dir = (state.robot.dir + 3) % 4;
+    renderBoard();
+    return true;
+  }
+
+  if (action === 'voltar') {
+    const backDir = (state.robot.dir + 2) % 4;
+    return tryMove(backDir);
+  }
+
+  return true;
+}
+
+async function executeProgram() {
+  if (state.executing) return;
+  if (state.commands.length === 0) {
+    setStatus('Escolha pelo menos um comando antes de executar a máquina.', 'error');
+    return;
+  }
+
+  state.executing = true;
+  executeBtn.disabled = true;
+  clearBtn.disabled = true;
+  document.querySelectorAll('.command-btn').forEach((btn) => (btn.disabled = true));
+  resetRobot();
+  setStatus('Executando instruções...');
+
+  for (const action of state.commands) {
+    if (!state.executing) break;
+
+    const ok = executeAction(action);
+    renderBoard();
+
+    if (!ok) {
+      state.executing = false;
+      executeBtn.disabled = false;
+      clearBtn.disabled = false;
+      document.querySelectorAll('.command-btn').forEach((btn) => (btn.disabled = false));
+      setStatus('Ops! A máquina encontrou um obstáculo. Ajuste os comandos e tente novamente.', 'error');
+      return;
+    }
+
+    if (state.robot.x === GOAL.x && state.robot.y === GOAL.y) {
+      state.executing = false;
+      executeBtn.disabled = false;
+      clearBtn.disabled = false;
+      document.querySelectorAll('.command-btn').forEach((btn) => (btn.disabled = false));
+      setStatus('Parabéns! Você conseguiu! Uma sequência organizada de instruções pode orientar uma máquina a realizar uma tarefa.', 'success');
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 380));
+  }
+
+  state.executing = false;
+  executeBtn.disabled = false;
+  clearBtn.disabled = false;
+  document.querySelectorAll('.command-btn').forEach((btn) => (btn.disabled = false));
+  setStatus('Ainda não chegou à estrela! Você pode modificar sua sequência e tentar outra vez.', 'error');
+}
+
+document.querySelectorAll('.command-btn').forEach((button) => {
+  button.addEventListener('click', () => addCommand(button.dataset.action));
+});
+
+executeBtn.addEventListener('click', executeProgram);
+clearBtn.addEventListener('click', clearSequence);
+
+renderBoard();
+renderCommands();
+setStatus('Sua missão é levar a máquina até a estrela! Organize os comandos e aperte Executar.');
